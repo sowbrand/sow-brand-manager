@@ -2,98 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Screen Utilities */
-.print-page {
+/* Configuração da Folha A4 na Tela */
+.a4-page {
   width: 210mm;
   min-height: 297mm;
+  margin: 0 auto;
+  background: white;
+  position: relative;
+  overflow: hidden; /* Impede que imagens gigantes estouram a folha */
 }
 
-/* PRINT MEDIA QUERIES - STRICT MODE */
+/* --- REGRAS DE IMPRESSÃO (O Segredo) --- */
 @media print {
-  /* 1. Global Page Setup */
+  /* Define o papel como A4 e remove cabeçalhos automáticos do navegador */
   @page {
     size: A4;
-    margin: 0; /* Remove cabeçalhos do navegador */
-  }
-  
-  html, body {
-    width: 210mm;
-    height: 297mm;
-    margin: 0;
-    padding: 0;
-    background: white;
-    font-size: 12pt;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    margin: 0mm;
   }
 
-  /* 2. Ocultar Elementos */
-  .no-print {
+  body {
+    background: white;
+    -webkit-print-color-adjust: exact; /* Força imprimir cores de fundo */
+    print-color-adjust: exact;
+  }
+
+  /* Esconde tudo que não deve sair no papel */
+  .no-print, 
+  .no-print * {
     display: none !important;
   }
 
-  /* 3. Transformar Inputs em Texto */
-  input, textarea, select {
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    resize: none !important;
-    box-shadow: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    color: black !important;
-  }
-
-  /* Esconder setas e placeholders */
-  ::placeholder { color: transparent !important; }
-  select::-ms-expand { display: none; }
-  
-  /* Checkboxes visíveis */
-  input[type="checkbox"] {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* 4. Quebras de Página */
-  .page-break {
-    break-before: page;
-    page-break-before: always;
-  }
-  
-  .avoid-break {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* 5. Layout Reset */
-  .print-container {
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    display: block !important;
+  /* Ajusta o layout para ocupar o papel todo */
+  #root, .print-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
     overflow: visible !important;
+    height: auto !important;
   }
 
+  /* Garante que a folha A4 seja a folha impressa */
   .a4-page {
     width: 210mm !important;
     height: 297mm !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    position: relative !important;
-    background: white !important;
+    margin: 0 !important;
+    padding: 10mm !important; /* Margem de segurança interna */
     box-shadow: none !important;
     border: none !important;
-    margin: 0 !important;
-    page-break-after: always;
-  }
-  .a4-page:last-child {
-    page-break-after: auto;
+    page-break-after: always; /* Força nova página se tiver mais de uma */
   }
 
-  ::-webkit-scrollbar {
-    display: none;
+  /* Evita quebras feias no meio de tabelas */
+  tr, td, div {
+    page-break-inside: avoid;
   }
 }
