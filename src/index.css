@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Screen Utilities */
+.print-page {
+  width: 210mm;
+  min-height: 297mm;
+}
+
+/* PRINT MEDIA QUERIES - STRICT MODE */
+@media print {
+  /* 1. Global Page Setup */
+  @page {
+    size: A4;
+    margin: 0; /* Remove cabeçalhos do navegador */
+  }
+  
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 0;
+    background: white;
+    font-size: 12pt;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 2. Ocultar Elementos */
+  .no-print {
+    display: none !important;
+  }
+
+  /* 3. Transformar Inputs em Texto */
+  input, textarea, select {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    resize: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    color: black !important;
+  }
+
+  /* Esconder setas e placeholders */
+  ::placeholder { color: transparent !important; }
+  select::-ms-expand { display: none; }
+  
+  /* Checkboxes visíveis */
+  input[type="checkbox"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 4. Quebras de Página */
+  .page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+  
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 5. Layout Reset */
+  .print-container {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .a4-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    position: relative !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    page-break-after: always;
+  }
+  .a4-page:last-child {
+    page-break-after: auto;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
