@@ -1,7 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Calculator, ArrowLeft, Printer, Save, RefreshCw, Check, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { FileText, Calculator, ArrowLeft, Printer, Save, RefreshCw, Check, Plus, Trash2, Cloud, FolderOpen, Loader2 } from 'lucide-react';
 
-// --- 1. CONFIGURAÇÕES E DADOS (CONSTANTS) ---
+// --- 1. CONFIGURAÇÃO DO SUPABASE ---
+const SUPABASE_URL = 'https://swdmdccdwpddzfesaeux.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3ZG1kY2Nkd3BkZHpmZXNhZXV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNDExMjgsImV4cCI6MjA4MDkxNzEyOH0.wjFPo9X8O8oYYtSwW7i6_M4dennk-36rBnNadzaNUb0';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// --- 2. DADOS E UTILITÁRIOS ---
 const COMPANY_INFO = {
   name: 'Sow Brand',
   cnpj: '26.224.938/0001-89',
@@ -22,9 +29,9 @@ const PRIVATE_LABEL_OPTIONS = [
 ];
 
 const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-const formatDate = (date: Date) => new Intl.DateTimeFormat('pt-BR').format(date);
+const formatDate = (date: Date | string) => new Intl.DateTimeFormat('pt-BR').format(new Date(date));
 
-// --- 2. COMPONENTES UI REUTILIZÁVEIS ---
+// --- 3. COMPONENTES VISUAIS ---
 const SowCheckbox: React.FC<{ label: string; checked: boolean; onChange: (c: boolean) => void }> = ({ label, checked, onChange }) => (
   <label className="flex items-center gap-2 cursor-pointer group">
     <div className="relative w-4 h-4 border border-black bg-white flex items-center justify-center" onClick={(e) => { e.preventDefault(); onChange(!checked); }}>
@@ -50,7 +57,44 @@ const Logo: React.FC<{ className?: string }> = ({ className }) => (
   </div>
 );
 
-// --- 3. MÓDULO: FICHA TÉCNICA ---
+// Componente Modal de Carregamento
+const LoadModal: React.FC<{ type: string; onClose: () => void; onLoad: (data: any) => void }> = ({ type, onClose, onLoad }) => {
+  const [docs, setDocs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      const { data, error } = await supabase.from('documents').select('*').eq('type', type).order('created_at', { ascending: false });
+      if (data) setDocs(data);
+      setLoading(false);
+    };
+    fetchDocs();
+  }, [type]);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+        <h3 className="font-bold text-lg mb-4 flex justify-between">Abrir {type === 'techpack' ? 'Ficha' : 'Orçamento'} <button onClick={onClose} className="text-red-500">✕</button></h3>
+        {loading ? <div className="flex justify-center"><Loader2 className="animate-spin" /></div> : (
+          <div className="space-y-2">
+            {docs.length === 0 && <p className="text-gray-500 text-sm">Nenhum arquivo salvo.</p>}
+            {docs.map(doc => (
+              <button key={doc.id} onClick={() => onLoad(doc.content)} className="w-full text-left p-3 border rounded hover:bg-gray-50 flex justify-between items-center group">
+                <div>
+                  <div className="font-bold text-sm">{doc.title || 'Sem Título'}</div>
+                  <div className="text-xs text-gray-400">{formatDate(doc.created_at)}</div>
+                </div>
+                <FolderOpen size={16} className="text-[#72bf03] opacity-0 group-hover:opacity-100" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// --- 4. MÓDULO FICHA TÉCNICA ---
 const TRIM_ITEMS = [
   { key: 'linhaPesponto', label: 'Linha Pesponto' }, { key: 'fioOverloque', label: 'Fio Overloque' },
   { key: 'etiquetaMarca', label: 'Etiqueta Marca' }, { key: 'etiquetaComp', label: 'Etiqueta Comp.' },
@@ -73,6 +117,20 @@ const TechPackGenerator = () => {
     },
     variants: ''
   });
+  
+  const [showLoad, setShowLoad] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Func: Salvar no Supabase
+  const handleSaveCloud = async () => {
+    if (!data.reference && !data.product) return alert("Preencha Referência ou Produto para salvar.");
+    setSaving(true);
+    const title = `${data.reference} - ${data.product}`;
+    const { error } = await supabase.from('documents').insert([{ type: 'techpack', title, content: data }]);
+    setSaving(false);
+    if (error) alert('Erro ao salvar: ' + error.message);
+    else alert('✅ Ficha Técnica salva na nuvem com sucesso!');
+  };
 
   const techDrawingRef = useRef<HTMLInputElement>(null);
   const frontRef = useRef<HTMLInputElement>(null);
@@ -94,9 +152,22 @@ const TechPackGenerator = () => {
 
   return (
     <div className="flex flex-col lg:flex-row h-full bg-gray-100 print:bg-white print:block">
+      {showLoad && <LoadModal type="techpack" onClose={() => setShowLoad(false)} onLoad={(d) => { setData(d); setShowLoad(false); }} />}
+      
       <div className="no-print w-full lg:w-80 bg-white border-r border-gray-300 p-6 flex flex-col gap-4 shadow-lg overflow-y-auto">
-        <h2 className="text-xl font-bold text-black">Painel Ficha Técnica</h2>
+        <h2 className="text-xl font-bold text-black">Ficha Técnica</h2>
+        
+        <div className="flex gap-2">
+          <button onClick={handleSaveCloud} disabled={saving} className="flex-1 py-2 bg-blue-600 text-white rounded font-bold flex justify-center gap-1 text-sm items-center hover:bg-blue-700">
+            {saving ? <Loader2 className="animate-spin" size={16}/> : <Cloud size={16}/>} Salvar
+          </button>
+          <button onClick={() => setShowLoad(true)} className="flex-1 py-2 bg-gray-200 text-black rounded font-bold flex justify-center gap-1 text-sm items-center hover:bg-gray-300">
+            <FolderOpen size={16}/> Abrir
+          </button>
+        </div>
+
         <button onClick={() => setTimeout(() => window.print(), 100)} className="w-full py-3 bg-[#72bf03] text-white rounded font-bold flex justify-center gap-2"><Printer size={18} /> Imprimir / PDF</button>
+        
         <div className="border-t pt-4 space-y-2">
            <p className="text-sm font-bold">Imagens</p>
            <button onClick={() => techDrawingRef.current?.click()} className="text-xs bg-blue-50 text-blue-700 p-2 w-full rounded">📸 Desenho Técnico</button>
@@ -106,6 +177,7 @@ const TechPackGenerator = () => {
            <button onClick={() => backRef.current?.click()} className="text-xs bg-blue-50 text-blue-700 p-2 w-full rounded">📸 Mockup Costas</button>
            <input type="file" ref={backRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'imageBack')} />
         </div>
+        <button onClick={() => {if(confirm('Limpar tudo?')) setData({ ...data, reference: '' })}} className="text-xs text-red-500 flex items-center gap-1 mt-4"><RefreshCw size={12}/> Limpar Campos</button>
       </div>
 
       <div className="flex-grow p-8 print:p-0 flex flex-col items-center gap-8">
@@ -198,12 +270,25 @@ const TechPackGenerator = () => {
   );
 };
 
-// --- 4. MÓDULO: ORÇAMENTO ---
+// --- 5. MÓDULO ORÇAMENTO ---
 const QuoteGenerator = () => {
   const [data, setData] = useState({
     orderNumber: '001/2025', orderDate: new Date().toISOString(), deliveryDate: new Date(Date.now() + 45 * 86400000).toISOString(),
     clientName: '', clientAddress: '', clientContact: '', items: [] as any[], observations: ''
   });
+  const [showLoad, setShowLoad] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Func: Salvar Orçamento na Nuvem
+  const handleSaveCloud = async () => {
+    if (!data.clientName) return alert("Preencha o Nome do Cliente para salvar.");
+    setSaving(true);
+    const title = `Orç. ${data.orderNumber} - ${data.clientName}`;
+    const { error } = await supabase.from('documents').insert([{ type: 'quote', title, content: data }]);
+    setSaving(false);
+    if (error) alert('Erro ao salvar: ' + error.message);
+    else alert('✅ Orçamento salvo na nuvem com sucesso!');
+  };
 
   const addItem = () => setData(p => ({...p, items: [...p.items, { id: Math.random(), service: '', sku: '', description: '', quantity: 1, unitPrice: 0 }]}));
   const updateItem = (id: number, f: string, v: any) => setData(p => ({...p, items: p.items.map(i => i.id === id ? { ...i, [f]: v, ...(f === 'service' ? { sku: SKU_MAP[v] || '', description: '' } : {}) } : i)}));
@@ -212,8 +297,20 @@ const QuoteGenerator = () => {
 
   return (
     <div className="flex flex-col lg:flex-row h-full print:block">
+      {showLoad && <LoadModal type="quote" onClose={() => setShowLoad(false)} onLoad={(d) => { setData(d); setShowLoad(false); }} />}
+
       <div className="no-print w-full lg:w-1/3 bg-white border-r border-gray-200 p-6 overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Orçamento</h2>
+        
+        <div className="flex gap-2 mb-4">
+          <button onClick={handleSaveCloud} disabled={saving} className="flex-1 py-2 bg-blue-600 text-white rounded font-bold flex justify-center gap-1 text-sm items-center hover:bg-blue-700">
+            {saving ? <Loader2 className="animate-spin" size={16}/> : <Cloud size={16}/>} Salvar
+          </button>
+          <button onClick={() => setShowLoad(true)} className="flex-1 py-2 bg-gray-200 text-black rounded font-bold flex justify-center gap-1 text-sm items-center hover:bg-gray-300">
+            <FolderOpen size={16}/> Abrir
+          </button>
+        </div>
+
         <div className="flex gap-2 mb-4">
            <button onClick={() => setTimeout(() => window.print(), 100)} className="bg-[#72bf03] text-white px-4 py-2 rounded font-bold flex gap-2"><Printer size={16}/> Imprimir</button>
            <button onClick={addItem} className="bg-blue-50 text-blue-600 px-4 py-2 rounded font-bold flex gap-2"><Plus size={16}/> Add Item</button>
@@ -241,7 +338,7 @@ const QuoteGenerator = () => {
                </div>
                <div className="grid grid-cols-2 gap-8 mb-8">
                   <div><h3 className="font-bold uppercase text-xs mb-2 border-b">Cliente</h3><p className="font-bold text-lg">{data.clientName || '---'}</p><p>{data.clientContact}</p></div>
-                  <div><h3 className="font-bold uppercase text-xs mb-2 border-b">Datas</h3><div className="flex justify-between text-sm"><span>Emissão:</span><b>{formatDate(new Date(data.orderDate))}</b></div><div className="flex justify-between text-sm"><span>Entrega:</span><b>{formatDate(new Date(data.deliveryDate))}</b></div></div>
+                  <div><h3 className="font-bold uppercase text-xs mb-2 border-b">Datas</h3><div className="flex justify-between text-sm"><span>Emissão:</span><b>{formatDate(data.orderDate)}</b></div><div className="flex justify-between text-sm"><span>Entrega:</span><b>{formatDate(data.deliveryDate)}</b></div></div>
                </div>
                <table className="w-full text-sm border-collapse mb-8">
                   <thead><tr className="bg-black text-white uppercase text-[10px]"><th className="py-2 px-3 text-left">SKU</th><th className="py-2 px-3 text-left w-1/2">Descrição</th><th className="py-2 px-3 text-center">Qtd</th><th className="py-2 px-3 text-right">Unit</th><th className="py-2 px-3 text-right">Total</th></tr></thead>
@@ -257,7 +354,7 @@ const QuoteGenerator = () => {
   );
 };
 
-// --- 5. APP PRINCIPAL (MENU) ---
+// --- 6. MENU PRINCIPAL ---
 function App() {
   const [screen, setScreen] = useState<'hub' | 'tech' | 'quote'>('hub');
 
