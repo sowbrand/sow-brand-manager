@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const COMPANY_INFO = {
   name: 'Sow Brand',
   cnpj: '26.224.938/0001-89',
-  contact: '(47) 99197-6744',
+  contact: '(47) 99197-6742', // CORREÇÃO: Telefone atualizado
   address: 'Rua Fermino Görl, 115, Reta, São Francisco do Sul - SC'
 };
 
@@ -94,7 +94,7 @@ const LoadModal: React.FC<{ type: string; onClose: () => void; onLoad: (data: an
   );
 };
 
-// --- FICHA TÉCNICA (LAYOUT AJUSTADO PARA 2 PÁGINAS) ---
+// --- FICHA TÉCNICA ---
 const TRIM_ITEMS = [
   { key: 'linhaPesponto', label: 'L. Pesponto' }, { key: 'fioOverloque', label: 'Fio Overloque' },
   { key: 'etiquetaMarca', label: 'Etiq. Marca' }, { key: 'etiquetaComp', label: 'Etiq. Comp.' },
@@ -286,11 +286,24 @@ const TechPackGenerator = () => {
 // --- ORÇAMENTO ---
 const QuoteGenerator = () => {
   const [data, setData] = useState({
-    orderNumber: '001/2025', orderDate: new Date().toISOString(), deliveryDate: new Date(Date.now() + 45 * 86400000).toISOString(),
+    orderNumber: 'Carregando...', // CORREÇÃO: Placeholder
+    orderDate: new Date().toISOString(), 
+    deliveryDate: new Date(Date.now() + 45 * 86400000).toISOString(),
     clientName: '', clientAddress: '', clientContact: '', items: [] as any[], observations: ''
   });
   const [showLoad, setShowLoad] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // CORREÇÃO: Numeração Automática
+  useEffect(() => {
+    const fetchOrderNumber = async () => {
+      const { count } = await supabase.from('documents').select('*', { count: 'exact', head: true }).eq('type', 'quote');
+      const nextNum = (count || 0) + 1;
+      const year = new Date().getFullYear();
+      setData(prev => ({ ...prev, orderNumber: `${String(nextNum).padStart(3, '0')}/${year}` }));
+    };
+    fetchOrderNumber();
+  }, []);
 
   const handleSaveCloud = async () => {
     if (!data.clientName) return alert("Preencha Cliente.");
