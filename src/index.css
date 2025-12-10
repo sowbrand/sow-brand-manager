@@ -5,56 +5,57 @@
 /* Configuração da Folha A4 na Tela */
 .a4-page {
   width: 210mm;
-  min-height: 297mm;
+  height: 296mm; /* Reduzi 1mm para segurança */
   margin: 0 auto;
   background: white;
   position: relative;
-  overflow: hidden; /* Impede que imagens gigantes estouram a folha */
+  overflow: hidden;
+  page-break-after: always; /* Força quebra após cada folha */
 }
 
-/* --- REGRAS DE IMPRESSÃO (O Segredo) --- */
+/* A última folha não deve criar uma nova página em branco */
+.a4-page:last-child {
+  page-break-after: avoid;
+}
+
 @media print {
-  /* Define o papel como A4 e remove cabeçalhos automáticos do navegador */
   @page {
     size: A4;
-    margin: 0mm;
+    margin: 0;
   }
 
   body {
     background: white;
-    -webkit-print-color-adjust: exact; /* Força imprimir cores de fundo */
+    margin: 0;
+    -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Esconde tudo que não deve sair no papel */
-  .no-print, 
-  .no-print * {
+  .no-print, .no-print * {
     display: none !important;
   }
 
-  /* Ajusta o layout para ocupar o papel todo */
+  /* Remove barras de rolagem e margens extras */
   #root, .print-container {
     width: 100%;
     margin: 0;
     padding: 0;
-    background: white;
     overflow: visible !important;
-    height: auto !important;
   }
 
-  /* Garante que a folha A4 seja a folha impressa */
   .a4-page {
     width: 210mm !important;
-    height: 297mm !important;
+    height: 296mm !important; /* Altura fixa A4 menos 1mm */
     margin: 0 !important;
-    padding: 10mm !important; /* Margem de segurança interna */
-    box-shadow: none !important;
+    padding: 10mm !important;
     border: none !important;
-    page-break-after: always; /* Força nova página se tiver mais de uma */
+    box-shadow: none !important;
+    page-break-after: always;
+    page-break-inside: avoid;
   }
 
-  /* Evita quebras feias no meio de tabelas */
-  tr, td, div {
-    page-break-inside: avoid;
+  /* Previne a 3ª página fantasma */
+  .a4-page:last-of-type {
+    page-break-after: avoid !important;
   }
 }

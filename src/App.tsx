@@ -2,17 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { FileText, Calculator, ArrowLeft, Printer, Save, RefreshCw, Check, Plus, Trash2, Cloud, FolderOpen, Loader2 } from 'lucide-react';
 
-// --- 1. CONFIGURAÇÃO DO SUPABASE ---
+// --- CONFIGURAÇÃO DO SUPABASE ---
 const SUPABASE_URL = 'https://swdmdccdwpddzfesaeux.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3ZG1kY2Nkd3BkZHpmZXNhZXV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNDExMjgsImV4cCI6MjA4MDkxNzEyOH0.wjFPo9X8O8oYYtSwW7i6_M4dennk-36rBnNadzaNUb0';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- 2. DADOS E UTILITÁRIOS ---
+// --- DADOS E UTILITÁRIOS ---
 const COMPANY_INFO = {
   name: 'Sow Brand',
   cnpj: '26.224.938/0001-89',
-  contact: '(47) 99197-6744 | sowbrandbrasil.com.br',
+  contact: '(47) 99197-6744',
   address: 'Rua Fermino Görl, 115, Reta, São Francisco do Sul - SC'
 };
 
@@ -31,7 +31,7 @@ const PRIVATE_LABEL_OPTIONS = [
 const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 const formatDate = (date: Date | string) => new Intl.DateTimeFormat('pt-BR').format(new Date(date));
 
-// --- 3. COMPONENTES VISUAIS ---
+// --- COMPONENTES VISUAIS ---
 const SowCheckbox: React.FC<{ label: string; checked: boolean; onChange: (c: boolean) => void }> = ({ label, checked, onChange }) => (
   <label className="flex items-center gap-1 cursor-pointer group">
     <div className="relative w-3 h-3 border border-black bg-white flex items-center justify-center" onClick={(e) => { e.preventDefault(); onChange(!checked); }}>
@@ -57,7 +57,7 @@ const Logo: React.FC<{ className?: string }> = ({ className }) => (
   </div>
 );
 
-// --- 4. MODAL ---
+// --- MODAL ---
 const LoadModal: React.FC<{ type: string; onClose: () => void; onLoad: (data: any) => void }> = ({ type, onClose, onLoad }) => {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +94,7 @@ const LoadModal: React.FC<{ type: string; onClose: () => void; onLoad: (data: an
   );
 };
 
-// --- 5. FICHA TÉCNICA (LAYOUT OTIMIZADO) ---
+// --- FICHA TÉCNICA (LAYOUT AJUSTADO PARA 2 PÁGINAS) ---
 const TRIM_ITEMS = [
   { key: 'linhaPesponto', label: 'L. Pesponto' }, { key: 'fioOverloque', label: 'Fio Overloque' },
   { key: 'etiquetaMarca', label: 'Etiq. Marca' }, { key: 'etiquetaComp', label: 'Etiq. Comp.' },
@@ -166,15 +166,14 @@ const TechPackGenerator = () => {
         <button onClick={() => {if(confirm('Limpar?')) setData({ ...data, reference: '' })}} className="text-xs text-red-400 mt-auto pt-4 flex items-center gap-1"><RefreshCw size={10}/> Resetar Ficha</button>
       </div>
 
-      {/* ÁREA DE VISUALIZAÇÃO / IMPRESSÃO */}
-      <div className="print-container flex-grow p-8 print:p-0 flex flex-col items-center gap-8 bg-gray-100 print:bg-white overflow-auto">
+      {/* ÁREA DE VISUALIZAÇÃO */}
+      <div className="print-container flex-grow p-8 print:p-0 flex flex-col items-center gap-4 bg-gray-100 print:bg-white overflow-auto">
         
-        {/* PÁGINA 1: COSTURA */}
+        {/* PÁGINA 1 */}
         <div className="a4-page shadow-lg print:shadow-none flex flex-col">
            <div className="absolute top-4 right-8 w-24 opacity-90"><Logo className="w-full" /></div>
            
-           {/* Cabeçalho Compacto */}
-           <div className="border border-black mt-8 mb-1">
+           <div className="border border-black mt-6 mb-1">
               <div className="bg-gray-200 border-b border-black p-1 px-2 font-bold text-xs print:bg-gray-200">SOWBRAND SYSTEMS v2.1 | COSTURA</div>
               <div className="flex divide-x divide-black border-b border-black text-[10px]">
                  <div className="w-1/4 p-1 flex items-center"><span className="font-bold mr-1">REF:</span><SowInput value={data.reference} onChange={e => setData({...data, reference: e.target.value})} placeholder="000" /></div>
@@ -187,16 +186,16 @@ const TechPackGenerator = () => {
               </div>
            </div>
 
-           {/* Desenho Técnico - Área Flexível */}
-           <div className="border border-black flex-grow mb-1 relative flex flex-col min-h-[300px]">
+           {/* Ajustei a altura mínima aqui para evitar estouro */}
+           <div className="border border-black flex-grow mb-1 relative flex flex-col min-h-[250px] max-h-[400px]">
               <div className="absolute top-0 left-0 bg-gray-100 px-2 py-0.5 text-[9px] font-bold border-r border-b border-black z-10">DESENHO TÉCNICO</div>
               <div className="flex-grow flex items-center justify-center p-2 overflow-hidden">
                   {data.technicalDrawing ? <img src={data.technicalDrawing} className="max-w-full max-h-full object-contain" /> : <span className="text-gray-200 text-xs">Sem imagem</span>}
               </div>
            </div>
 
-           {/* Info Técnica - Bloco Inferior */}
-           <div className="h-[220px] flex gap-1 mb-1">
+           {/* Info Técnica - Altura Fixa Reduzida */}
+           <div className="h-[200px] flex gap-1 mb-1">
               <div className="w-1/2 flex flex-col border border-black">
                  <div className="bg-gray-200 border-b border-black p-0.5 text-center font-bold text-[10px]">MAQUINÁRIO</div>
                  <div className="p-1 border-b border-black flex-grow text-[10px] space-y-1">
@@ -219,18 +218,18 @@ const TechPackGenerator = () => {
               </div>
            </div>
 
-           <div className="border border-black bg-gray-50 p-1 mt-auto h-16">
+           <div className="border border-black bg-gray-50 p-1 mt-auto h-14">
                <div className="text-[9px] font-bold uppercase">OBSERVAÇÕES DE COSTURA</div>
                <textarea value={data.obsCostura} onChange={e => setData({...data, obsCostura: e.target.value})} className="w-full bg-transparent text-[10px] resize-none h-full outline-none leading-tight" />
            </div>
            <div className="text-right text-[8px] mt-1 font-bold">PÁGINA 1/2</div>
         </div>
 
-        {/* PÁGINA 2: ESTAMPA */}
+        {/* PÁGINA 2 */}
         <div className="a4-page shadow-lg print:shadow-none flex flex-col">
            <div className="absolute top-4 right-8 w-24 opacity-90"><Logo className="w-full" /></div>
            
-           <div className="border border-black mt-8 mb-1">
+           <div className="border border-black mt-6 mb-1">
               <div className="bg-gray-200 border-b border-black p-1 px-2 font-bold text-xs">SOWBRAND SYSTEMS v2.1 | ESTAMPA</div>
               <div className="flex divide-x divide-black text-[10px]">
                  <div className="w-1/4 p-1 flex items-center"><span className="font-bold mr-1">REF:</span><SowInput value={data.reference} readOnly /></div>
@@ -239,7 +238,6 @@ const TechPackGenerator = () => {
            </div>
 
            <div className="flex gap-1 flex-grow overflow-hidden">
-              {/* Coluna Imagens */}
               <div className="w-3/5 flex flex-col gap-1">
                  <div className="flex-1 border border-black flex flex-col relative">
                      <div className="bg-gray-100 border-b border-black p-0.5 text-center font-bold text-[9px]">VISTA FRENTE</div>
@@ -255,16 +253,13 @@ const TechPackGenerator = () => {
                  </div>
               </div>
 
-              {/* Coluna Specs */}
               <div className="w-2/5 border border-black flex flex-col">
                  <div className="bg-yellow-300 border-b border-black p-1 text-center font-bold text-[10px] uppercase">&gt;&gt; ESTAMPARIA &lt;&lt;</div>
                  <div className="flex-grow p-1 space-y-2 overflow-hidden flex flex-col">
-                    
                     <div className="border border-black text-[9px] p-1 space-y-1 bg-gray-50">
                        <div className="flex items-center"><span className="font-bold w-14">TÉCNICA:</span><SowSelect value={data.printSpecs.technique} onChange={e => setData({...data, printSpecs: {...data.printSpecs, technique: e.target.value}})} className="text-[9px]"><option value="">-</option><option value="Silk">Silk Screen</option><option value="DTF">DTF</option><option value="Subli">Sublimação</option></SowSelect></div>
                        <div className="flex items-center"><span className="font-bold w-14">TOQUE:</span><SowSelect value={data.printSpecs.touch} onChange={e => setData({...data, printSpecs: {...data.printSpecs, touch: e.target.value}})} className="text-[9px]"><option value="">-</option><option value="Zero">Toque Zero</option><option value="Emborrachado">Emborrachado</option></SowSelect></div>
                     </div>
-
                     <div className="flex-grow space-y-1">
                         {['local1', 'local2', 'local3'].map((locKey, idx) => {
                         const loc = (data.printLocations as any)[locKey];
@@ -276,7 +271,6 @@ const TechPackGenerator = () => {
                         </div>
                         })}
                     </div>
-
                     <div className="bg-[#545454] text-white p-0.5 text-[9px] font-bold text-center mt-auto">VARIANTES</div>
                     <textarea value={data.variants} onChange={e => setData({...data, variants: e.target.value})} className="w-full text-[9px] h-16 border border-black p-1 resize-none" />
                  </div>
@@ -289,7 +283,7 @@ const TechPackGenerator = () => {
   );
 };
 
-// --- 6. ORÇAMENTO (LAYOUT OTIMIZADO) ---
+// --- ORÇAMENTO ---
 const QuoteGenerator = () => {
   const [data, setData] = useState({
     orderNumber: '001/2025', orderDate: new Date().toISOString(), deliveryDate: new Date(Date.now() + 45 * 86400000).toISOString(),
@@ -366,7 +360,7 @@ const QuoteGenerator = () => {
   );
 };
 
-// --- 7. APP PRINCIPAL ---
+// --- APP PRINCIPAL ---
 function App() {
   const [screen, setScreen] = useState<'hub' | 'tech' | 'quote'>('hub');
 
