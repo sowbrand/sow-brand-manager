@@ -4,8 +4,11 @@ import { TechPackData } from '../types';
 import { Logo } from './Logo';
 import { SowSelect, SowInput } from './UI';
 
-// --- KNOWLEDGE BASE (CONSTANTS) ---
-const MACHINERY_OPTIONS = ["Overloque 3 Fios", "Overloque 4 Fios (Ponto Cadeia)", "Reta Industrial", "Galoneira (Fechada)", "Galoneira (Aberta)"];
+// --- BASE DE CONHECIMENTO (CONSTANTES) ---
+const CLOSING_MACHINES = ["Overloque 3 Fios", "Overloque 4 Fios (Ponto Cadeia)"];
+const HEM_MACHINES = ["Galoneira Refiladeira", "Galoneira Aberta", "Galoneira Fechada"];
+const REINFORCEMENT_MACHINES = ["Ponto Corrente 2 Agulhas", "Reta Industrial (1 Agulha)", "Ombro a Ombro (Corrente)"];
+
 const THREAD_TYPES = ["100% Poliéster 120 (Padrão)", "Algodão (Para Tingimento)", "Pesponto (Grosso)"];
 const LOOPER_THREADS = ["Fio Poliéster", "Fio Helanca (Poliamida/Texturizado)"];
 const HEM_SIZES = ["2.0 cm (Padrão)", "2.5 cm (Marca)", "3.0 cm (Street)", "4.0 cm (Oversized)", "Fio a Fio (Estreito)"];
@@ -21,8 +24,11 @@ const INITIAL_DATA: TechPackData = {
   date: new Date().toISOString().split('T')[0],
   technicalDrawing: null,
   
-  // New Fields
-  sewingMachine: '',
+  // Novos Campos de Maquinário
+  machineClosing: '',
+  machineHem: '',
+  machineReinforcement: '',
+  
   needleThread: '',
   looperThread: '',
   hemSize: '',
@@ -47,18 +53,18 @@ const INITIAL_DATA: TechPackData = {
 export const TechPackGenerator: React.FC = () => {
   const [data, setData] = useState<TechPackData>(INITIAL_DATA);
 
-  // Refs for file inputs
+  // Refs para inputs de arquivo
   const techDrawingRef = useRef<HTMLInputElement>(null);
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
 
-  // Load from local storage on mount
+  // Carregar rascunho ao iniciar
   useEffect(() => {
     const saved = localStorage.getItem('sow_techpack_active_draft');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Merge with initial data to ensure new fields exist if loading old draft
+        // Merge com dados iniciais para garantir que novos campos existam
         setData({ ...INITIAL_DATA, ...parsed });
       } catch (e) {
         console.error("Erro ao carregar rascunho");
@@ -66,7 +72,7 @@ export const TechPackGenerator: React.FC = () => {
     }
   }, []);
 
-  // Save to local storage whenever data changes
+  // Salvar rascunho automaticamente
   useEffect(() => {
     localStorage.setItem('sow_techpack_active_draft', JSON.stringify(data));
   }, [data]);
@@ -103,14 +109,13 @@ export const TechPackGenerator: React.FC = () => {
     }));
   };
 
-  // Helper styles
-  const inputClass = "";
+  // Classes utilitárias
   const pageClass = "a4-page bg-white shadow-2xl p-[10mm] text-black border-2 border-transparent relative flex flex-col mx-auto mb-8 print:shadow-none print:mb-0 print:border-none print:mx-0";
 
   return (
     <div className="flex flex-col lg:flex-row h-full bg-gray-100 print:bg-white print:block">
       
-      {/* --- SIDEBAR CONTROLS (No Print) --- */}
+      {/* --- SIDEBAR DE CONTROLE (Não Imprime) --- */}
       <div className="no-print w-full lg:w-80 bg-white border-r border-gray-300 p-6 flex flex-col gap-6 shadow-lg z-10 h-auto lg:h-[calc(100vh-64px)] overflow-y-auto">
         <div>
           <h2 className="text-xl font-bold text-sow-black mb-2">Painel de Controle</h2>
@@ -118,15 +123,31 @@ export const TechPackGenerator: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-            {/* GROUP 1 */}
+            {/* GRUPO 1: Maquinário */}
             <div className="space-y-3">
                 <h3 className="text-xs font-bold text-sow-green uppercase border-b border-gray-200 pb-1">1. Máquinas & Fios</h3>
                 
                 <div className="space-y-1">
-                    <label className="text-xs text-gray-500 font-bold">Máquina Principal</label>
-                    <SowSelect value={data.sewingMachine} onChange={e => setData({...data, sewingMachine: e.target.value})}>
+                    <label className="text-xs text-gray-500 font-bold">Máquina de Fechamento</label>
+                    <SowSelect value={data.machineClosing} onChange={e => setData({...data, machineClosing: e.target.value})}>
                         <option value="">Selecione...</option>
-                        {MACHINERY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        {CLOSING_MACHINES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Máquina Galoneira</label>
+                    <SowSelect value={data.machineHem} onChange={e => setData({...data, machineHem: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {HEM_MACHINES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Máquina de Reforço</label>
+                    <SowSelect value={data.machineReinforcement} onChange={e => setData({...data, machineReinforcement: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {REINFORCEMENT_MACHINES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </SowSelect>
                 </div>
 
@@ -147,7 +168,7 @@ export const TechPackGenerator: React.FC = () => {
                 </div>
             </div>
 
-            {/* GROUP 2 */}
+            {/* GRUPO 2: Acabamentos */}
             <div className="space-y-3">
                 <h3 className="text-xs font-bold text-sow-green uppercase border-b border-gray-200 pb-1">2. Acabamentos (Barras)</h3>
                 
@@ -168,7 +189,7 @@ export const TechPackGenerator: React.FC = () => {
                 </div>
             </div>
 
-            {/* GROUP 3 */}
+            {/* GRUPO 3: Gola & Reforços */}
             <div className="space-y-3">
                 <h3 className="text-xs font-bold text-sow-green uppercase border-b border-gray-200 pb-1">3. Gola & Reforços</h3>
                 
@@ -242,17 +263,17 @@ export const TechPackGenerator: React.FC = () => {
         </div>
       </div>
 
-      {/* --- PRINT PREVIEW AREA --- */}
+      {/* --- ÁREA DE PRÉ-VISUALIZAÇÃO DE IMPRESSÃO --- */}
       <div className="flex-grow overflow-auto p-4 lg:p-8 flex flex-col items-center gap-8 print:p-0 print:gap-0 print:block">
         
-        {/* ================= PAGE 1: COSTURA ================= */}
+        {/* ================= PÁGINA 1: COSTURA ================= */}
         <div className={pageClass}>
             
              <div className="absolute top-[10mm] right-[10mm] w-32 opacity-80 print:opacity-100">
                  <Logo className="w-full" />
              </div>
 
-            {/* Page 1 Header */}
+            {/* Cabeçalho Página 1 */}
             <div className="border border-black mb-1 mt-10">
                 <div className="bg-gray-200 border-b border-black p-1 px-2 font-bold text-sm print:bg-gray-200">
                     SOWBRAND SYSTEMS v2.1 | FICHA TÉCNICA: COSTURA & AVIAMENTOS
@@ -283,7 +304,7 @@ export const TechPackGenerator: React.FC = () => {
                 </div>
             </div>
 
-            {/* Page 1: Technical Drawing Area */}
+            {/* Área do Desenho Técnico */}
             <div className="border border-black flex-grow mb-1 relative flex flex-col min-h-[400px]">
                  <div className="absolute top-0 left-0 bg-gray-200 px-2 py-0.5 text-[10px] font-bold border-r border-b border-black z-10 print:bg-gray-200">
                      DESENHO TÉCNICO (FRENTE / VERSO)
@@ -299,19 +320,27 @@ export const TechPackGenerator: React.FC = () => {
                  </div>
             </div>
 
-            {/* Page 1: New Technical Specs Table */}
+            {/* Tabela de Especificações Técnicas (Nova Layout de Colunas) */}
             <div className="flex flex-col border border-black mb-1">
                 <div className="bg-gray-200 border-b border-black p-1 text-center font-bold text-xs print:bg-gray-200 uppercase">
                     Especificações de Maquinário & Acabamentos
                 </div>
                 
-                {/* Specs Grid */}
+                {/* Grid de Especificações */}
                 <div className="grid grid-cols-2 text-xs">
-                    {/* Left Side - Machines & Thread */}
+                    {/* Coluna Esquerda - Máquinas e Fios */}
                     <div className="border-r border-black">
                         <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
-                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Máquina:</div>
-                             <div className="p-1 font-mono">{data.sewingMachine || '---'}</div>
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Fechamento:</div>
+                             <div className="p-1 font-mono">{data.machineClosing || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Galoneira:</div>
+                             <div className="p-1 font-mono">{data.machineHem || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Reforço (Maq):</div>
+                             <div className="p-1 font-mono">{data.machineReinforcement || '---'}</div>
                         </div>
                         <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
                              <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Fio Agulha:</div>
@@ -321,13 +350,9 @@ export const TechPackGenerator: React.FC = () => {
                              <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Fio Looper:</div>
                              <div className="p-1 font-mono">{data.looperThread || '---'}</div>
                         </div>
-                        <div className="grid grid-cols-[100px_1fr]">
-                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Reforço:</div>
-                             <div className="p-1 font-mono">{data.reinforcement || '---'}</div>
-                        </div>
                     </div>
 
-                    {/* Right Side - Hems & Collars */}
+                    {/* Coluna Direita - Barras e Golas */}
                     <div>
                          <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
                              <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Barra (Corpo):</div>
@@ -341,15 +366,19 @@ export const TechPackGenerator: React.FC = () => {
                              <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Material Gola:</div>
                              <div className="p-1 font-mono">{data.collarMaterial || '---'}</div>
                         </div>
-                        <div className="grid grid-cols-[100px_1fr]">
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
                              <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Altura Gola:</div>
                              <div className="p-1 font-mono">{data.collarHeight || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr]">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Reforço (Tipo):</div>
+                             <div className="p-1 font-mono">{data.reinforcement || '---'}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Page 1: Footer */}
+            {/* Rodapé Página 1 */}
             <div className="border border-black bg-gray-100 p-1 mt-auto print:bg-gray-100">
                 <div className="text-[10px] font-bold uppercase mb-1">OBS. COSTURA [Campo Aberto]</div>
                 <textarea 
@@ -362,15 +391,14 @@ export const TechPackGenerator: React.FC = () => {
             <div className="text-right text-[9px] mt-1 font-bold">SOWBRAND SYS | PÁGINA 1/2 | ESPEC. TÉCNICA COSTURA</div>
         </div>
 
-        {/* ================= PAGE 2: ESTAMPA ================= */}
+        {/* ================= PÁGINA 2: ESTAMPA ================= */}
         <div className={`${pageClass} page-break`}>
             
-            {/* Logo Header (Added for consistency) */}
              <div className="absolute top-[10mm] right-[10mm] w-32 opacity-80 print:opacity-100">
                  <Logo className="w-full" />
              </div>
 
-             {/* Page 2 Header */}
+             {/* Cabeçalho Página 2 */}
              <div className="border border-black mb-1 mt-10">
                 <div className="bg-gray-200 border-b border-black p-1 px-2 font-bold text-sm print:bg-gray-200">
                     SOWBRAND SYSTEMS v2.1 | FICHA TÉCNICA: ESPECIFICAÇÕES DE ESTAMPARIA
@@ -387,10 +415,10 @@ export const TechPackGenerator: React.FC = () => {
                 </div>
             </div>
 
-            {/* Page 2 Columns */}
+            {/* Colunas Página 2 */}
             <div className="flex gap-2 flex-grow">
                 
-                {/* LEFT COL: IMAGES */}
+                {/* COLUNA ESQUERDA: IMAGENS */}
                 <div className="w-[55%] flex flex-col gap-2">
                     <div className="flex-1 border border-black flex flex-col">
                         <div className="bg-gray-200 border-b border-black p-1 text-center font-bold text-xs uppercase print:bg-gray-200">VISTA FRENTE (Topo)</div>
@@ -414,7 +442,7 @@ export const TechPackGenerator: React.FC = () => {
                     </div>
                 </div>
 
-                {/* RIGHT COL: SPECS */}
+                {/* COLUNA DIREITA: ESPECIFICAÇÕES */}
                 <div className="w-[45%] border border-black flex flex-col">
                     <div className="bg-yellow-300 border-b border-black p-1 text-center font-bold text-xs uppercase tracking-wide print:bg-yellow-300">
                         &gt;&gt;&gt; FOCO TOTAL: ESTAMPARIA & ARTE &lt;&lt;&lt;
@@ -422,7 +450,7 @@ export const TechPackGenerator: React.FC = () => {
 
                     <div className="flex-grow p-2 space-y-4 overflow-hidden">
                         
-                        {/* Main Specs */}
+                        {/* Specs Principais */}
                         <div className="border border-black">
                             <div className="bg-gray-200 border-b border-black p-1 text-center font-bold text-[10px] print:bg-gray-200">ESPECIFICAÇÕES DA ARTE [Sistema]</div>
                             <div className="p-1 text-xs space-y-1">
@@ -446,7 +474,7 @@ export const TechPackGenerator: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Location Blocks */}
+                        {/* Blocos de Localização */}
                         {['local1', 'local2', 'local3'].map((locKey, idx) => {
                             const loc = (data.printLocations as any)[locKey];
                             return (
@@ -464,7 +492,7 @@ export const TechPackGenerator: React.FC = () => {
                             );
                         })}
 
-                        {/* Variants */}
+                        {/* Variantes */}
                         <div className="bg-sow-dark text-white p-1 text-[10px] text-center font-bold print:bg-gray-800">VARIANTES ATIVAS [Sistema]</div>
                         <textarea 
                             value={data.variants}

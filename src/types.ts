@@ -18,8 +18,12 @@ export interface TechPackData {
   
   technicalDrawing: string | null;
   
-  // New Strict Technical Fields (Replaces old objects)
-  sewingMachine: string;
+  // Campos Específicos de Maquinário (Atualizado)
+  machineClosing: string;
+  machineHem: string;
+  machineReinforcement: string;
+  
+  // Campos de Fios e Acabamentos
   needleThread: string;
   looperThread: string;
   hemSize: string;
