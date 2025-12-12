@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Printer, Save, RefreshCw } from 'lucide-react';
+import { Upload, Printer, Save, Trash2, RefreshCw } from 'lucide-react';
 import { TechPackData } from '../types';
 import { Logo } from './Logo';
-import { SowCheckbox, SowInput, SowSelect } from './UI';
+import { SowSelect, SowInput } from './UI';
 
-// LISTA DE AVIAMENTOS (Movida para cá para evitar erro de sintaxe)
-const TRIM_ITEMS = [
-  { key: 'linhaPesponto', label: 'Linha Pesponto' },
-  { key: 'fioOverloque', label: 'Fio Overloque' },
-  { key: 'etiquetaMarca', label: 'Etiqueta Marca' },
-  { key: 'etiquetaComp', label: 'Etiqueta Comp.' },
-  { key: 'cadarcoLimpeza', label: 'Cadarço Limpeza' }
-];
+// --- KNOWLEDGE BASE (CONSTANTS) ---
+const MACHINERY_OPTIONS = ["Overloque 3 Fios", "Overloque 4 Fios (Ponto Cadeia)", "Reta Industrial", "Galoneira (Fechada)", "Galoneira (Aberta)"];
+const THREAD_TYPES = ["100% Poliéster 120 (Padrão)", "Algodão (Para Tingimento)", "Pesponto (Grosso)"];
+const LOOPER_THREADS = ["Fio Poliéster", "Fio Helanca (Poliamida/Texturizado)"];
+const HEM_SIZES = ["2.0 cm (Padrão)", "2.5 cm (Marca)", "3.0 cm (Street)", "4.0 cm (Oversized)", "Fio a Fio (Estreito)"];
+const COLLAR_TYPES = ["Ribana Canelada 1x1", "Ribana Canelada 2x1", "Do Próprio Tecido (Viés)", "Gola Careca", "Gola V"];
+const COLLAR_HEIGHTS = ["1.5 cm", "2.0 cm (Padrão)", "2.5 cm", "3.0 cm (High)"];
+const REINFORCEMENTS = ["Ombro a Ombro", "Meia Lua (Costas)", "Sem Reforço"];
 
 const INITIAL_DATA: TechPackData = {
   reference: '',
@@ -20,15 +20,17 @@ const INITIAL_DATA: TechPackData = {
   responsible: '',
   date: new Date().toISOString().split('T')[0],
   technicalDrawing: null,
-  machines: { overloque: false, reta: false, galoneira: false },
-  finishes: { gola: '', limpeza: '', bainhas: '' },
-  trims: {
-    linhaPesponto: { used: true, desc: '' },
-    fioOverloque: { used: true, desc: '' },
-    etiquetaMarca: { used: false, desc: '' },
-    etiquetaComp: { used: true, desc: '' },
-    cadarcoLimpeza: { used: true, desc: '' },
-  },
+  
+  // New Fields
+  sewingMachine: '',
+  needleThread: '',
+  looperThread: '',
+  hemSize: '',
+  sleeveHem: '',
+  collarMaterial: '',
+  collarHeight: '',
+  reinforcement: '',
+
   obsCostura: '',
   fabric: '',
   imageFront: null,
@@ -55,7 +57,9 @@ export const TechPackGenerator: React.FC = () => {
     const saved = localStorage.getItem('sow_techpack_active_draft');
     if (saved) {
       try {
-        setData(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Merge with initial data to ensure new fields exist if loading old draft
+        setData({ ...INITIAL_DATA, ...parsed });
       } catch (e) {
         console.error("Erro ao carregar rascunho");
       }
@@ -89,24 +93,6 @@ export const TechPackGenerator: React.FC = () => {
     }
   };
 
-  const updateMachine = (key: keyof typeof data.machines, val: boolean) => {
-    setData(prev => ({ ...prev, machines: { ...prev.machines, [key]: val } }));
-  };
-
-  const updateFinish = (key: keyof typeof data.finishes, value: string) => {
-    setData(prev => ({ ...prev, finishes: { ...prev.finishes, [key]: value } }));
-  };
-
-  const updateTrim = (key: string, field: 'used' | 'desc', value: any) => {
-    setData(prev => ({
-      ...prev,
-      trims: {
-        ...prev.trims,
-        [key]: { ...(prev.trims as any)[key], [field]: value }
-      }
-    }));
-  };
-
   const updatePrintLoc = (key: keyof typeof data.printLocations, field: string, value: string) => {
     setData(prev => ({
       ...prev,
@@ -117,6 +103,8 @@ export const TechPackGenerator: React.FC = () => {
     }));
   };
 
+  // Helper styles
+  const inputClass = "";
   const pageClass = "a4-page bg-white shadow-2xl p-[10mm] text-black border-2 border-transparent relative flex flex-col mx-auto mb-8 print:shadow-none print:mb-0 print:border-none print:mx-0";
 
   return (
@@ -126,34 +114,115 @@ export const TechPackGenerator: React.FC = () => {
       <div className="no-print w-full lg:w-80 bg-white border-r border-gray-300 p-6 flex flex-col gap-6 shadow-lg z-10 h-auto lg:h-[calc(100vh-64px)] overflow-y-auto">
         <div>
           <h2 className="text-xl font-bold text-sow-black mb-2">Painel de Controle</h2>
-          <p className="text-sm text-gray-500">Edite os dados diretamente na folha ao lado.</p>
+          <p className="text-sm text-gray-500">Preencha as especificações técnicas.</p>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="space-y-6">
+            {/* GROUP 1 */}
+            <div className="space-y-3">
+                <h3 className="text-xs font-bold text-sow-green uppercase border-b border-gray-200 pb-1">1. Máquinas & Fios</h3>
+                
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Máquina Principal</label>
+                    <SowSelect value={data.sewingMachine} onChange={e => setData({...data, sewingMachine: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {MACHINERY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Fio da Agulha</label>
+                    <SowSelect value={data.needleThread} onChange={e => setData({...data, needleThread: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {THREAD_TYPES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Fio do Looper</label>
+                    <SowSelect value={data.looperThread} onChange={e => setData({...data, looperThread: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {LOOPER_THREADS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+            </div>
+
+            {/* GROUP 2 */}
+            <div className="space-y-3">
+                <h3 className="text-xs font-bold text-sow-green uppercase border-b border-gray-200 pb-1">2. Acabamentos (Barras)</h3>
+                
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Barra (Corpo)</label>
+                    <SowSelect value={data.hemSize} onChange={e => setData({...data, hemSize: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {HEM_SIZES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Barra (Manga)</label>
+                    <SowSelect value={data.sleeveHem} onChange={e => setData({...data, sleeveHem: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {HEM_SIZES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+            </div>
+
+            {/* GROUP 3 */}
+            <div className="space-y-3">
+                <h3 className="text-xs font-bold text-sow-green uppercase border-b border-gray-200 pb-1">3. Gola & Reforços</h3>
+                
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Material da Gola</label>
+                    <SowSelect value={data.collarMaterial} onChange={e => setData({...data, collarMaterial: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {COLLAR_TYPES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Altura da Gola</label>
+                    <SowSelect value={data.collarHeight} onChange={e => setData({...data, collarHeight: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {COLLAR_HEIGHTS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-bold">Tipo de Reforço</label>
+                    <SowSelect value={data.reinforcement} onChange={e => setData({...data, reinforcement: e.target.value})}>
+                        <option value="">Selecione...</option>
+                        {REINFORCEMENTS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </SowSelect>
+                </div>
+            </div>
+        </div>
+
+        <div className="border-t pt-4 flex flex-col gap-3">
           <button 
             onClick={handleNew}
             className="w-full py-3 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded font-bold flex items-center justify-center gap-2"
           >
-            <RefreshCw size={18} /> Nova Ficha (Limpar)
+            <RefreshCw size={18} /> Nova Ficha
           </button>
           
           <button 
             onClick={() => localStorage.setItem('sow_techpack_active_draft', JSON.stringify(data))}
             className="w-full py-3 bg-gray-100 text-sow-dark border border-gray-200 hover:bg-gray-200 rounded font-bold flex items-center justify-center gap-2"
           >
-            <Save size={18} /> Salvar Rascunho
+            <Save size={18} /> Salvar
           </button>
 
           <button 
             onClick={handlePrint}
             className="w-full py-3 bg-sow-green text-white hover:bg-[#65a803] rounded font-bold flex items-center justify-center gap-2 shadow-sm"
           >
-            <Printer size={18} /> Imprimir / PDF
+            <Printer size={18} /> Imprimir
           </button>
         </div>
 
         <div className="mt-4 border-t pt-4">
-            <h3 className="font-bold text-sm mb-2">Uploads Rápidos</h3>
+            <h3 className="font-bold text-sm mb-2">Uploads</h3>
             <div className="space-y-2">
                 <button onClick={() => techDrawingRef.current?.click()} className="text-xs bg-blue-50 text-blue-700 p-2 w-full text-left rounded hover:bg-blue-100">
                     📸 Add Desenho Técnico (Pág 1)
@@ -230,82 +299,52 @@ export const TechPackGenerator: React.FC = () => {
                  </div>
             </div>
 
-            {/* Page 1: Bottom Blocks */}
-            <div className="h-[280px] flex gap-2 mb-1">
-                {/* Left: Machinery */}
-                <div className="w-1/2 flex flex-col border border-black">
-                    <div className="bg-gray-200 border-b border-black p-1 text-center font-bold text-xs print:bg-gray-200">MAQUINÁRIO & COSTURA [Sistema]</div>
-                    
-                    <div className="p-2 border-b border-black flex-grow">
-                        <div className="text-xs font-bold mb-1">MÁQUINAS:</div>
-                        <div className="space-y-2 ml-1 mt-2">
-                            <SowCheckbox 
-                                label="[Overloque 4 Fios]" 
-                                checked={data.machines.overloque} 
-                                onChange={(c) => updateMachine('overloque', c)} 
-                            />
-                            <SowCheckbox 
-                                label="[Reta Industrial]" 
-                                checked={data.machines.reta} 
-                                onChange={(c) => updateMachine('reta', c)} 
-                            />
-                            <SowCheckbox 
-                                label="[Galoneira]" 
-                                checked={data.machines.galoneira} 
-                                onChange={(c) => updateMachine('galoneira', c)} 
-                            />
-                        </div>
-                    </div>
-
-                    <div className="p-1 text-xs">
-                        <div className="font-bold mb-1 bg-gray-100 print:bg-gray-100">ACABAMENTOS</div>
-                        <div className="grid grid-cols-[60px_1fr] gap-1 items-center mb-1">
-                            <span className="font-bold">GOLA:</span>
-                            <SowInput value={data.finishes.gola} onChange={e => updateFinish('gola', e.target.value)} className="border-b border-dotted border-gray-400" placeholder="..." />
-                        </div>
-                        <div className="grid grid-cols-[60px_1fr] gap-1 items-center mb-1">
-                            <span className="font-bold">LIMPEZA:</span>
-                            <SowInput value={data.finishes.limpeza} onChange={e => updateFinish('limpeza', e.target.value)} className="border-b border-dotted border-gray-400" placeholder="..." />
-                        </div>
-                        <div className="grid grid-cols-[60px_1fr] gap-1 items-center">
-                            <span className="font-bold">BAINHAS:</span>
-                            <SowInput value={data.finishes.bainhas} onChange={e => updateFinish('bainhas', e.target.value)} className="border-b border-dotted border-gray-400" placeholder="..." />
-                        </div>
-                    </div>
+            {/* Page 1: New Technical Specs Table */}
+            <div className="flex flex-col border border-black mb-1">
+                <div className="bg-gray-200 border-b border-black p-1 text-center font-bold text-xs print:bg-gray-200 uppercase">
+                    Especificações de Maquinário & Acabamentos
                 </div>
+                
+                {/* Specs Grid */}
+                <div className="grid grid-cols-2 text-xs">
+                    {/* Left Side - Machines & Thread */}
+                    <div className="border-r border-black">
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Máquina:</div>
+                             <div className="p-1 font-mono">{data.sewingMachine || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Fio Agulha:</div>
+                             <div className="p-1 font-mono">{data.needleThread || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Fio Looper:</div>
+                             <div className="p-1 font-mono">{data.looperThread || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr]">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Reforço:</div>
+                             <div className="p-1 font-mono">{data.reinforcement || '---'}</div>
+                        </div>
+                    </div>
 
-                {/* Right: Trims */}
-                <div className="w-1/2 border border-black flex flex-col">
-                    <div className="bg-gray-200 border-b border-black p-1 text-center font-bold text-xs print:bg-gray-200">TABELA DE AVIAMENTOS [Sistema]</div>
-                    <div className="flex-grow overflow-hidden">
-                        <table className="w-full text-xs">
-                            <colgroup>
-                                <col className="w-8" />
-                                <col className="w-24" />
-                                <col />
-                            </colgroup>
-                            <tbody>
-                                {TRIM_ITEMS.map((item) => (
-                                    <tr key={item.key} className="border-b border-black last:border-0 h-8">
-                                        <td className="text-center border-r border-black pl-2">
-                                            <SowCheckbox 
-                                                label=""
-                                                checked={(data.trims as any)[item.key].used} 
-                                                onChange={(c) => updateTrim(item.key, 'used', c)}
-                                            />
-                                        </td>
-                                        <td className="px-1 border-r border-black font-medium">{item.label}</td>
-                                        <td className="px-1">
-                                            <SowInput 
-                                                value={(data.trims as any)[item.key].desc}
-                                                onChange={(e) => updateTrim(item.key, 'desc', e.target.value)}
-                                                placeholder="Especificação..."
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    {/* Right Side - Hems & Collars */}
+                    <div>
+                         <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Barra (Corpo):</div>
+                             <div className="p-1 font-mono">{data.hemSize || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Barra (Manga):</div>
+                             <div className="p-1 font-mono">{data.sleeveHem || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr] border-b border-gray-300 last:border-0">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Material Gola:</div>
+                             <div className="p-1 font-mono">{data.collarMaterial || '---'}</div>
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr]">
+                             <div className="p-1 font-bold bg-gray-50 print:bg-gray-50">Altura Gola:</div>
+                             <div className="p-1 font-mono">{data.collarHeight || '---'}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -326,6 +365,7 @@ export const TechPackGenerator: React.FC = () => {
         {/* ================= PAGE 2: ESTAMPA ================= */}
         <div className={`${pageClass} page-break`}>
             
+            {/* Logo Header (Added for consistency) */}
              <div className="absolute top-[10mm] right-[10mm] w-32 opacity-80 print:opacity-100">
                  <Logo className="w-full" />
              </div>

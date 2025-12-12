@@ -9,49 +9,30 @@ export interface PrintLocation {
   technique: string;
 }
 
-export interface TrimItem {
-  used: boolean;
-  desc: string;
-}
-
 export interface TechPackData {
-  // Header Geral
   reference: string;
   collection: string;
   product: string;
   responsible: string;
   date: string;
   
-  // Página 1 - Costura
-  technicalDrawing: string | null; // Base64 image
+  technicalDrawing: string | null;
   
-  machines: {
-    overloque: boolean;
-    reta: boolean;
-    galoneira: boolean;
-  };
-
-  finishes: {
-    gola: string;
-    limpeza: string;
-    bainhas: string;
-  };
-
-  // Tabela de Aviamentos (Linhas fixas conforme layout)
-  trims: {
-    linhaPesponto: TrimItem;
-    fioOverloque: TrimItem;
-    etiquetaMarca: TrimItem;
-    etiquetaComp: TrimItem;
-    cadarcoLimpeza: TrimItem;
-  };
+  // New Strict Technical Fields (Replaces old objects)
+  sewingMachine: string;
+  needleThread: string;
+  looperThread: string;
+  hemSize: string;
+  sleeveHem: string;
+  collarMaterial: string;
+  collarHeight: string;
+  reinforcement: string;
 
   obsCostura: string;
 
-  // Página 2 - Estampa
   fabric: string;
-  imageFront: string | null; // Base64 image
-  imageBack: string | null;  // Base64 image
+  imageFront: string | null;
+  imageBack: string | null;
 
   printSpecs: {
     technique: string;
@@ -69,7 +50,7 @@ export interface TechPackData {
 
 export interface QuoteItem {
   id: string;
-  service: string; // 'Desenvolvimento de Marca' | 'Private Label' ...
+  service: string;
   sku: string;
   description: string;
   quantity: number;
