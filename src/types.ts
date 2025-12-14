@@ -9,35 +9,58 @@ export interface PrintLocation {
   technique: string;
 }
 
+export interface GridRow {
+  id: string;
+  color: string;
+  sizes: {
+    P: number;
+    M: number;
+    G: number;
+    GG: number;
+    XG: number;
+  };
+}
+
 export interface TechPackData {
+  // General Info
   reference: string;
   collection: string;
   product: string;
   responsible: string;
   date: string;
   
-  technicalDrawing: string | null;
+  // Media
+  technicalDrawing: string | null; // Line Art (Page 3)
+  imageFront: string | null;       // Mockup (Page 4)
+  imageBack: string | null;        // Mockup (Page 4)
+
+  // Production Grid
+  productionGrid: GridRow[];
   
-  // Campos Específicos de Maquinário (Atualizado)
+  // Cutting Data
+  fabric: string; // Main Fabric
+  fabricWidth: string;
+  fabricYield: string;
+  restTime: boolean;
+
+  // Machinery
   machineClosing: string;
   machineHem: string;
   machineReinforcement: string;
   
-  // Campos de Fios e Acabamentos
+  // Threads & Hems
   needleThread: string;
   looperThread: string;
   hemSize: string;
-  sleeveHem: string;
+  sleeveHem: string; 
   collarMaterial: string;
   collarHeight: string;
-  reinforcement: string;
+  reinforcementType: string; // Renamed from reinforcement
 
+  // Instructions
   obsCostura: string;
 
-  fabric: string;
-  imageFront: string | null;
-  imageBack: string | null;
-
+  // Print Specs (Silk/Embroidery)
   printSpecs: {
     technique: string;
     touch: string;
@@ -48,6 +71,12 @@ export interface TechPackData {
     local2: PrintLocation;
     local3: PrintLocation;
   };
+
+  // DTF Settings
+  dtfTemp: string;
+  dtfTime: string;
+  dtfPressure: string;
+  dtfPeel: string;
 
   variants: string;
 }
