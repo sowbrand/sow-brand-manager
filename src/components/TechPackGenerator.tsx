@@ -109,6 +109,31 @@ export const TechPackGenerator: React.FC = () => {
     localStorage.setItem('sow_techpack_v3_draft', JSON.stringify(data));
   }, [data]);
 
+  // --- MATH HELPERS (GCD & RATIO) ---
+  const gcd = (a: number, b: number): number => {
+    return b === 0 ? a : gcd(b, a % b);
+  };
+
+  const getArrayGcd = (arr: number[]) => {
+    let result = arr[0];
+    for (let i = 1; i < arr.length; i++) {
+      result = gcd(result, arr[i]);
+    }
+    return result;
+  };
+
+  const calculateRatioRow = (sizes: GridRow['sizes']) => {
+    const values = [sizes.P, sizes.M, sizes.G, sizes.GG, sizes.XG];
+    // Filter out zeros to calculate GCD correctly
+    const activeValues = values.filter(v => v > 0);
+    
+    if (activeValues.length === 0) return ['-', '-', '-', '-', '-'];
+
+    const divisor = getArrayGcd(activeValues);
+    
+    return values.map(v => (v === 0 ? '-' : v / divisor));
+  };
+
   // --- HANDLERS ---
   const handleSave = () => {
     localStorage.setItem('sow_techpack_v3_draft', JSON.stringify(data));
@@ -125,17 +150,12 @@ export const TechPackGenerator: React.FC = () => {
     style.id = 'print-override';
 
     if (pageId === 'all') {
-        // Default print behavior (everything visible)
-        // We don't strictly need to inject CSS for 'all' if the default CSS is correct,
-        // but let's ensure .print-page is visible.
         style.innerHTML = `
             @media print {
                 .print-page { display: block !important; }
             }
         `;
     } else {
-        // Hide all pages that generally have the class 'print-page'
-        // But SHOW the specific ID requested
         style.innerHTML = `
             @media print {
                 .print-page { display: none !important; }
@@ -150,7 +170,7 @@ export const TechPackGenerator: React.FC = () => {
     // Increased delay to 800ms to be absolutely safe
     setTimeout(() => {
         window.print();
-        // 3. Cleanup after print dialog closes (browser pauses execution during print dialog)
+        // 3. Cleanup after print dialog closes
         setTimeout(() => {
            const el = document.getElementById('print-override');
            if (el) el.remove();
@@ -218,6 +238,11 @@ export const TechPackGenerator: React.FC = () => {
     }, 0);
   };
 
+  // Helper for Column Totals (Footer of Page 2)
+  const calculateColumnTotal = (size: keyof GridRow['sizes']) => {
+    return data.productionGrid.reduce((acc, row) => acc + (row.sizes[size] || 0), 0);
+  };
+
   const formatDisplayDate = (isoDate: string) => {
     if (!isoDate) return '---';
     try {
@@ -237,7 +262,7 @@ export const TechPackGenerator: React.FC = () => {
       <div className="flex flex-col">
         <Logo className="w-40 mb-2" />
         <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-          Sow Brand Systems V3.3
+          Sow Brand Systems V3.5
         </div>
       </div>
       <div className="text-right">
@@ -296,7 +321,8 @@ export const TechPackGenerator: React.FC = () => {
               <button onClick={() => handlePrint('page-1')} className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded flex items-center justify-center gap-2 border border-gray-300">
                 <Printer size={14}/> Imprimir Página 1
               </button>
-              {/* Grid Logic... */}
+              
+              {/* Production Grid Input */}
               <div className="border-t pt-4">
                  <h3 className="font-bold text-sow-dark text-sm mb-3 flex justify-between items-center">
                     <span>Grade de Produção</span>
@@ -369,11 +395,10 @@ export const TechPackGenerator: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: SEWING (UPDATED) */}
+          {/* TAB 3: SEWING */}
           {activeTab === 'sewing' && (
             <div className="space-y-6 animate-in fade-in duration-300">
-              
-              {/* SECTION 1: MAQUINÁRIO */}
+              {/* ... Sewing Inputs Preserved ... */}
               <div className="space-y-3">
                 <h3 className="font-bold text-sow-green border-b border-gray-200 pb-1 text-xs uppercase flex items-center gap-2">
                    <Layers size={14} /> 1. Maquinário (Setup)
@@ -399,7 +424,6 @@ export const TechPackGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* SECTION 2: FIOS & AGULHAS */}
               <div className="space-y-3">
                  <h3 className="font-bold text-sow-green border-b border-gray-200 pb-1 text-xs uppercase flex items-center gap-2">
                    <Scissors size={14} /> 2. Fios & Agulhas
@@ -419,7 +443,6 @@ export const TechPackGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* SECTION 3: ACABAMENTOS */}
               <div className="space-y-3">
                  <h3 className="font-bold text-sow-green border-b border-gray-200 pb-1 text-xs uppercase flex items-center gap-2">
                    <CheckSquare size={14} /> 3. Acabamentos
@@ -713,13 +736,13 @@ export const TechPackGenerator: React.FC = () => {
             </div>
         </div>
 
-        {/* ================= PAGE 2: CORTE ================= */}
+        {/* ================= PAGE 2: CORTE (UPDATED) ================= */}
         <div id="page-2" className={pageClass} style={pageStyle}>
             <PrintHeader title="Ordem de Corte" subtitle="Sala de Corte & Enfesto" />
 
-            <div className="flex-grow">
+            <div className="flex-grow flex flex-col gap-6">
                 {/* Warning Box */}
-                <div className={`mb-10 border-4 p-6 text-center ${data.restTime ? 'border-red-600 bg-red-50' : 'border-gray-200 bg-gray-50'}`}>
+                <div className={`border-4 p-6 text-center flex-shrink-0 ${data.restTime ? 'border-red-600 bg-red-50' : 'border-gray-200 bg-gray-50'}`}>
                     <h3 className={`text-xl font-black uppercase mb-2 ${data.restTime ? 'text-red-600' : 'text-gray-400'}`}>
                         {data.restTime ? '⚠ ATENÇÃO: DESCANSO DE MALHA OBRIGATÓRIO' : 'Sem restrição de descanso'}
                     </h3>
@@ -728,8 +751,8 @@ export const TechPackGenerator: React.FC = () => {
                     </p>
                 </div>
 
-                {/* Technical Specs */}
-                <div className="grid grid-cols-2 gap-8 mb-10">
+                {/* Technical Specs & Molds (Side by Side) */}
+                <div className="grid grid-cols-2 gap-6">
                    <div className="border border-black">
                       <div className="bg-black text-white px-2 py-1 text-xs font-bold uppercase text-center">Dados do Tecido</div>
                       <div className="p-6 text-center space-y-4">
@@ -768,6 +791,79 @@ export const TechPackGenerator: React.FC = () => {
                       </div>
                    </div>
                 </div>
+
+                {/* NEW: GRADE DE CORTE / RATIO TABLE */}
+                <div className="border-2 border-black flex-grow flex flex-col">
+                   <div className="bg-black text-white px-4 py-2 font-black uppercase text-sm flex justify-between items-center">
+                     <span>Ordem de Corte & Ratio (Enfesto)</span>
+                     <span>Total Geral: {calculateTotalQty()} Pcs</span>
+                   </div>
+                   
+                   <div className="flex-grow relative">
+                      <table className="w-full text-center text-sm border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100 border-b-2 border-black font-bold text-xs uppercase">
+                            <th className="p-3 border-r border-gray-300 text-left">Cor / Variante</th>
+                            <th className="p-3 border-r border-gray-300 w-16">P</th>
+                            <th className="p-3 border-r border-gray-300 w-16">M</th>
+                            <th className="p-3 border-r border-gray-300 w-16">G</th>
+                            <th className="p-3 border-r border-gray-300 w-16">GG</th>
+                            <th className="p-3 border-r border-gray-300 w-16">XG</th>
+                            <th className="p-3 bg-gray-200 font-black">QTD</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {data.productionGrid.map(row => {
+                            const ratio = calculateRatioRow(row.sizes);
+                            const totalRow = Object.values(row.sizes).reduce((a:number, b:number) => a + b, 0);
+
+                            return (
+                              <React.Fragment key={row.id}>
+                                {/* Row 1: Raw Qty */}
+                                <tr className="hover:bg-gray-50">
+                                  <td className="p-3 text-left border-r border-gray-300 font-bold uppercase">{row.color}</td>
+                                  <td className="p-3 border-r border-gray-300">{row.sizes.P}</td>
+                                  <td className="p-3 border-r border-gray-300">{row.sizes.M}</td>
+                                  <td className="p-3 border-r border-gray-300">{row.sizes.G}</td>
+                                  <td className="p-3 border-r border-gray-300">{row.sizes.GG}</td>
+                                  <td className="p-3 border-r border-gray-300">{row.sizes.XG}</td>
+                                  <td className="p-3 font-bold bg-gray-100">{totalRow}</td>
+                                </tr>
+                                {/* Row 2: Ratio (Gray) */}
+                                <tr className="bg-gray-200 text-xs font-mono border-b border-gray-300">
+                                  <td className="p-2 text-left border-r border-gray-400 font-bold uppercase pl-8 text-gray-600">↳ RATIO / GRADE</td>
+                                  <td className="p-2 border-r border-gray-400 font-bold">{ratio[0]}</td>
+                                  <td className="p-2 border-r border-gray-400 font-bold">{ratio[1]}</td>
+                                  <td className="p-2 border-r border-gray-400 font-bold">{ratio[2]}</td>
+                                  <td className="p-2 border-r border-gray-400 font-bold">{ratio[3]}</td>
+                                  <td className="p-2 border-r border-gray-400 font-bold">{ratio[4]}</td>
+                                  <td className="p-2 bg-gray-300"></td>
+                                </tr>
+                              </React.Fragment>
+                            )
+                          })}
+                        </tbody>
+                        <tfoot>
+                            <tr className="bg-gray-800 text-white font-bold text-sm uppercase">
+                              <td className="p-3 text-right border-r border-gray-600">Total Programado</td>
+                              <td className="p-3 border-r border-gray-600">{calculateColumnTotal('P')}</td>
+                              <td className="p-3 border-r border-gray-600">{calculateColumnTotal('M')}</td>
+                              <td className="p-3 border-r border-gray-600">{calculateColumnTotal('G')}</td>
+                              <td className="p-3 border-r border-gray-600">{calculateColumnTotal('GG')}</td>
+                              <td className="p-3 border-r border-gray-600">{calculateColumnTotal('XG')}</td>
+                              <td className="p-3 bg-sow-green">{calculateTotalQty()}</td>
+                            </tr>
+                        </tfoot>
+                      </table>
+                      
+                      {/* Empty state visual */}
+                      {data.productionGrid.length === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-20 text-4xl font-black uppercase rotate-[-12deg]">
+                          Sem Grade Definida
+                        </div>
+                      )}
+                   </div>
+                </div>
             </div>
 
             <div className="mt-auto pt-4 border-t-2 border-black flex justify-between text-[10px] font-bold uppercase text-gray-500">
@@ -776,7 +872,7 @@ export const TechPackGenerator: React.FC = () => {
             </div>
         </div>
 
-        {/* ================= PAGE 3: COSTURA (UPDATED) ================= */}
+        {/* ================= PAGE 3: COSTURA ================= */}
         <div id="page-3" className={pageClass} style={pageStyle}>
             <PrintHeader title="Costura & Montagem" subtitle="Oficina de Costura" />
 
